@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+pacman::p_load(readxl, dplyr, tidyr)
+select <- dplyr::select
+
 # makes MRS variable from csv and xlsx
 csv_file <- "13MP20200207_LCMv2fixidx.csv"
 xlsx_file <- "lcm.xlsx"
@@ -9,12 +12,12 @@ MRS <- read.csv(csv_file)
 # create a list of who to remove and remove them
 lcm <- read_excel(xlsx_file, col_names = FALSE)
 lcm <- separate(lcm, "...1", c("ld8", "junk","y","x"),extra="merge", sep = "[-.]")
-lcm <- dplyr::select(lcm, -junk)
+lcm <- select(lcm, -junk)
 lcm$bad <- TRUE
 MRS <- MRS %>% mutate(x=216+1-x,y=216+1-y)
 MRS <- merge(MRS, lcm, by=c("ld8", "x", "y"), all=T) 
 MRS <- filter(MRS, is.na(bad))
-MRS <- dplyr::select(MRS, -bad)
+MRS <- select(MRS, -bad)
 
 #keep only visit 1 people
 MRS <- MRS %>% filter(visitnum==1)

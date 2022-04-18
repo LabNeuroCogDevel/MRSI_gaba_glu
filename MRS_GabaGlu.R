@@ -1,8 +1,11 @@
 # depends on MRS from readMRS.R
-source("readMRS.R")
+# exports
+#  MRS_GabaGlu  -- used by ma_gaba_glu_slope
+#  MRS_GabaGlu_r -- correlation with residisualized
+source("readMRS.R") # get MRS (cleaned and with age group and roi labels)
 select <- dplyr::select
 z_thres = 2
-keep_rois <- c(1,2,7,8,9,10)   # or keep_rois <- names(region_look)
+keep_rois <- c(1,2,7,8,9,10)
 
 MRS_glu <- MRS %>%
   mutate(agegrp = cut(age, breaks=c(0,16,22,Inf),
