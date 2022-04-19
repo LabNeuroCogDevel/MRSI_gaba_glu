@@ -9,6 +9,8 @@ allSlopes <- ma_gaba_glu_slope(MRS_GabaGlu)
 
     #ggplot()+geom_bar(data=cor_vals, aes(x=agegrp_mid, y=GabaGlu_r, fill=agegrp), stat="identity", width=5.5) + facet_wrap(~region)
 
+slopes_color <- "blue"
+
 corr_bar_and_line <-
  allSlopes %>% mutate(label=roi) %>% filter(label %in% unique(MRS_GabaGlu_r$label)) %>%
  ggplot() +
@@ -20,8 +22,15 @@ corr_bar_and_line <-
     geom_errorbarh(aes(xmin = minAge,xmax = maxAge), alpha=0.1) +
     geom_errorbar(aes(ymin = slope - se, ymax = slope+se), alpha=0.1) +
     stat_smooth(method='loess', span=1.5, se=F, size=2) +
+    scale_y_continuous(sec.axis = dup_axis(name="Effect Size")) +
     facet_wrap(. ~ label) +
     theme_cowplot() +
+    scale_fill_manual(values=c("#aaaaaa","#777777","#444444"))+
+    theme(axis.ticks.y.right = element_line(color = slopes_color),
+          axis.line.y.right = element_line(color = slopes_color),
+          axis.text.y.right = element_text(color = slopes_color),
+          axis.title.y.right = element_text(color = slopes_color),
+    legend.position = 'none') +
     labs(x='Age',
          y='Glu GABA Corr (r)',
          fill = "Age Group")
