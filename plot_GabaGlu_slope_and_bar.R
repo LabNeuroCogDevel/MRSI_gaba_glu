@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 source("MRS_GabaGlu.R") # MRS_GabaGlu MRS_GabaGlu_r 
 source("ma_gaba_glu_slope.R") # function: ma_gaba_glu_slope.R
-pacman::p_load(dplyr,ggplot2,viridis,RColorBrewer, cowplot)
+pacman::p_load(dplyr, ggplot2, viridis, RColorBrewer, cowplot)
 select <- dplyr::select # might not be necessary, but keep it just in case
 
 # moving average model
@@ -34,4 +34,5 @@ corr_bar_and_line <-
     labs(x='Age',
          y='Glu GABA Corr (r)',
          fill = "Age Group")
-print(corr_bar_and_line)
+
+ggsave(corr_bar_and_line, file="out/slope_and_bar.pdf")
