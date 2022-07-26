@@ -46,6 +46,8 @@ MRS$age2 <- (MRS$age - mean(MRS$age))^2
 
 
 ## 3. and agegrp and region label
+##  NB. could remove R/L from names to later collapse/average across hemisphere
+##  13MP20200207_LCMv2fixidx.csv now includes 'label' column
 region_look <- list(
   "1" = "RAntInsula",
   "2" = "LAntInsula",

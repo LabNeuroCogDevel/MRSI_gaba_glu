@@ -28,7 +28,13 @@ MRS_GabaGlu$glu.resids <- residuals(glu.resids)
 gaba.resids <- lm(data=MRS_GabaGlu, GABA.Cr ~ sex + GMrat, na.action="na.exclude")
 MRS_GabaGlu$gaba.resids <- residuals(gaba.resids)
 
-# average resids
+# average resids over identicial label/region
+# NB. label/region are now all unique within visit.
+#     prev might have had region names exclude L/R portion of label
+#     to collapse across hemisphere
+#     now summarise does nothing: mean of 1 element is identical
+# TODO: can probably drop 'label' column from all group_by
+#       column is used in plot_GabaGlu_slope_and_bar.R but as an alias for 'roi'
 gabaGluRes_region_avg <- MRS_GabaGlu %>%
   filter(roi %in% keep_rois) %>%          # remove any rois not in region_loopup
   select(ld8, agegrp,glu.resids,gaba.resids, label, region, age) %>%
@@ -37,6 +43,8 @@ gabaGluRes_region_avg <- MRS_GabaGlu %>%
   summarise_at(vars(glu.resids, gaba.resids), mean, na.rm=T)
 
 # get correlations and confidence intervals
+# now (20220726) label==region. holdover from collapsing hemisphers?
+# see readMRS.R:region_look
 MRS_GabaGlu_r <- gabaGluRes_region_avg %>%
   group_by(label,region,agegrp) %>%
   summarise(GabaGlu_r=cor(glu.resids, gaba.resids), 
