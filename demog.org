@@ -3,7 +3,7 @@
 # demographics by region
 # would be better as org-babel or RMarkdown document
 # initial 20220725. revisited 20220815
-#+begin_src R :session :results none
+#+begin_src R :session :exports code
 source("MRS_GabaGlu.R")
 library(ggplot2)
 library(cowplot)
@@ -12,14 +12,14 @@ MRS_GG_keep <- MRS_GabaGlu %>% filter(roi %in% keep_rois)
 # keep_rois <- c(1,2,7,8,9,10) # from MRS_GabaGlu.R
 #+end_src
 
-#+begin_src R :session 
+#+begin_src R :session  :exports both
 length(unique(MRS_GG_keep$ld8)) 
 #+end_src
 
 #+RESULTS:
 : 137
 
-#+begin_src R :results graphics file :file imgs/region_agegrp.png :session 
+#+begin_src R :results graphics file :file imgs/region_agegrp.png :session  :exports both
 group_demo <- MRS_GG_keep %>%
    group_by(agegrp,sex,region) %>%
    summarise(n=length(unique(ld8)))
@@ -51,7 +51,7 @@ plot_grid(p_age_n, p_g1)
 
 
 20220815
-#+begin_src R :session :colnames yes
+#+begin_src R :session :colnames yes :exports both
 MRS_GG_keep %>%
     group_by(region,sex) %>%
     summarise(n=length(unique(ld8)), y=min(age), o=max(age)) %>%
@@ -70,12 +70,15 @@ MRS_GG_keep %>%
 | RDLPFC     |  46 |  53 | 10.89 | 10.18 | 29.63 | 29.48 |  99 | 10.18 | 29.63 |
 
 
-#+begin_src R :results graphics file :file imgs/agge_region_ :session
+#+begin_src R :results graphics file :file imgs/age_region_id.png :session :exports both
 MRS_GG_keep %>%
     group_by(ld8) %>%
     mutate(nregion=n()) %>%
     ggplot() +
     aes(y=age, x=region, color=nregion) +
     geom_point(alpha=.8) +
-    cowplot::theme_cowplot()  # +guides(color="none")
+    cowplot::theme_cowplot()
 #+END_SRC
+
+#+RESULTS:
+[[file:imgs/age_region_id.png]]
