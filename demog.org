@@ -1,5 +1,4 @@
 #+TITLE: Demographics
-MRS_GG_keep <- MRS_GabaGlu %>% filter(roi %in% keep_rois)
 
 # demographics by region
 # would be better as org-babel or RMarkdown document
@@ -7,28 +6,48 @@ MRS_GG_keep <- MRS_GabaGlu %>% filter(roi %in% keep_rois)
 #+begin_src R :session :results none
 source("MRS_GabaGlu.R")
 library(ggplot2)
-theme_set(cowplot::theme_cowplot())
+library(cowplot)
+theme_set(theme_cowplot())
 MRS_GG_keep <- MRS_GabaGlu %>% filter(roi %in% keep_rois)
+# keep_rois <- c(1,2,7,8,9,10) # from MRS_GabaGlu.R
 #+end_src
 
 #+begin_src R :session 
-# keep_rois <- c(1,2,7,8,9,10) # from MRS_GabaGlu.R
-length(unique(MRS_GG_keep$ld8)) # == 137 
+length(unique(MRS_GG_keep$ld8)) 
+#+end_src
 
+#+RESULTS:
+: 137
+
+#+begin_src R :results graphics file :file imgs/region_agegrp.png :session 
 group_demo <- MRS_GG_keep %>%
    group_by(agegrp,sex,region) %>%
    summarise(n=length(unique(ld8)))
 
-ggplot(group_demo) +
+p_age_n <- ggplot(group_demo) +
    aes(x=agegrp,y=n,fill=sex) +
    geom_col(position='dodge') +
-   facet_wrap(~region)
+   facet_wrap(~region) +
+   theme(axis.text.x=element_text(angle=45, hjust=1)) +
+   guides(fill="none") # have guide on plot below
 
 d <- MRS_GabaGlu %>%  filter(roi %in% keep_rois)
-plot_grid(ggplot(d) + aes(x=region,fill=agegrp)+ geom_bar(position='dodge'),
-          ggplot(d) + aes(x=region,fill=sex)+ geom_bar(position='dodge'),nrow=2)
+p_g1 <- plot_grid(
+    ggplot(d) +
+     aes(x=region,fill=agegrp)+
+     geom_bar(position='dodge') +
+     theme(axis.text.x=element_text(angle=45, hjust=1)),
+    ggplot(d) +
+     aes(x=region,fill=sex)+
+     geom_bar(position='dodge') +
+     theme(axis.text.x=element_text(angle=45, hjust=1)),
+    nrow=2)
+plot_grid(p_age_n, p_g1)
 
 #+end_src
+
+#+RESULTS:
+[[file:imgs/region_agegrp.png]]
 
 
 20220815
