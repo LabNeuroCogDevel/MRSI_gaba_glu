@@ -3,7 +3,7 @@
 # demographics by region
 # would be better as org-babel or RMarkdown document
 # initial 20220725. revisited 20220815
-#+begin_src R :session :exports code
+#+begin_src R :session :exports code :results none
 source("MRS_GabaGlu.R")
 library(ggplot2)
 library(cowplot)
@@ -11,6 +11,7 @@ theme_set(theme_cowplot())
 MRS_GG_keep <- MRS_GabaGlu %>% filter(roi %in% keep_rois)
 # keep_rois <- c(1,2,7,8,9,10) # from MRS_GabaGlu.R
 #+end_src
+
 
 #+begin_src R :session  :exports both
 length(unique(MRS_GG_keep$ld8)) 
@@ -68,6 +69,38 @@ MRS_GG_keep %>%
 | MPFC       |  56 |  57 | 10.59 | 11.48 | 29.63 | 29.48 | 113 | 10.59 | 29.63 |
 | RAntInsula |  62 |  61 | 10.59 | 10.18 | 29.63 | 30.44 | 123 | 10.18 | 30.44 |
 | RDLPFC     |  46 |  53 | 10.89 | 10.18 | 29.63 | 29.48 |  99 | 10.18 | 29.63 |
+
+
+including age groups
+#+begin_src R :session :colnames yes :exports both 
+MRS_GG_keep %>%
+    group_by(region,agegrp, sex) %>%
+    summarise(n=length(unique(ld8)), y=min(age), o=max(age)) %>%
+    pivot_wider(c("region","agegrp"), names_from="sex", values_from = c("n","y","o")) %>%
+    mutate(n=n_M+n_F, y=min(c_across(c(y_F,y_M))), o=max(c_across(c(o_F,o_M))))
+#+END_SRC
+
+#+RESULTS:
+|region    |agegrp | n_F  |n_M | y_F | y_M | o_F | o_M |   n |   y |   o|
+|----------+-------+------+----+-----+-----+-----+-----+-----+-----+----|
+|ACC       |10-16  |  19  | 19 |10.6 |10.2 |15.9 |16.0 |  38 |10.2 |16.0|
+|ACC       |17-22  |  23  | 23 |16.0 |16.2 |21.9 |21.9 |  46 |16.0 |21.9|
+|ACC       |23-30  |  15  | 23 |22.7 |22.1 |29.6 |30.4 |  38 |22.1 |30.4|
+|LAntInsula|10-16  |  20  | 15 |10.6 |10.2 |15.9 |16.0 |  35 |10.2 |16.0|
+|LAntInsula|17-22  |  20  | 24 |16.0 |16.2 |21.9 |21.9 |  44 |16.0 |21.9|
+|LAntInsula|23-30  |  15  | 21 |22.7 |22.1 |29.6 |30.4 |  36 |22.1 |30.4|
+|LDLPFC    |10-16  |  19  | 16 |10.6 |10.2 |15.9 |16.0 |  35 |10.2 |16.0|
+|LDLPFC    |17-22  |  16  | 23 |16.2 |16.2 |21.7 |21.9 |  39 |16.2 |21.9|
+|LDLPFC    |23-30  |  12  | 15 |22.7 |22.1 |29.6 |30.4 |  27 |22.1 |30.4|
+|MPFC      |10-16  |  17  | 15 |10.6 |11.5 |15.9 |16.0 |  32 |10.6 |16.0|
+|MPFC      |17-22  |  21  | 22 |16.0 |16.2 |21.9 |21.9 |  43 |16.0 |21.9|
+|MPFC      |23-30  |  18  | 20 |22.7 |22.1 |29.6 |29.5 |  38 |22.1 |29.6|
+|RAntInsula|10-16  |  20  | 16 |10.6 |10.2 |15.9 |16.0 |  36 |10.2 |16.0|
+|RAntInsula|17-22  |  23  | 22 |16.0 |16.2 |21.9 |21.9 |  45 |16.0 |21.9|
+|RAntInsula|23-30  |  19  | 23 |22.7 |22.1 |29.6 |30.4 |  42 |22.1 |30.4|
+|RDLPFC    |10-16  |  17  | 17 |10.9 |10.2 |15.6 |16.0 |  34 |10.2 |16.0|
+|RDLPFC    |17-22  |  16  | 17 |16.2 |16.3 |21.9 |21.9 |  33 |16.2 |21.9|
+|RDLPFC    |23-30  |  13  | 19 |22.8 |22.1 |29.6 |29.5 |  32 |22.1 |29.6|
 
 
 #+begin_src R :results graphics file :file imgs/age_region_id.png :session :exports both
