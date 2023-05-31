@@ -1,0 +1,38 @@
+#+TITLE: MRSI PFC R
+
+Original git repo for GABA vs Glu paper.
+Now also hosting general GAM adjusted MRSI for the PFC slice.
+
+* Make
+~Makefile~ attempts to record provenance of outputs.
+
+run ~make~ to update only the outputs that are out of date.
+
+* Wide to Long
+~mrsi_funcs.R~ defines ~longer_met_CrSD()~ which reshape
+the wide (many columns) per-metabolite .Cr and .SD columns into 
+a longer (more rows) dataframe with repeating samples: a row for each metabolite.
+New columns are ~'met'~, ~'Cr'~, and ~'SD'~ replace the original columns GABA.Cr, GABA.SD, Glu.Cr, ....
+
+
+Long format data is easier to plot and group_by/summarize (or in non-tidyverse speak ~map + reduce~)
+
+* Thresholding
+Per region per metabolite abs(zscore) threshold of 3 yields. (20230531 -- TODO: confirm best strategy) 
+[[file:imgs/thresholding_cnt_met_region.png]]
+
+* GAM adjustment
+see ~adjust_all.R~ and ~visualize.R~
+
+[[file:imgs/gam_adjusted_Vs_Cr.png]]
+
+* Testing
+~./test_mrsi_funcs.R~ and ~./test_res_with_age.R~ exercises some functions
+#+begin_src R :session :results output verbatim
+invisible(lapply(Sys.glob("test_*R"),testthat::test_file) )
+#+end_src
+
+* Merge 7T
+~out/gamadj_wide.csv~ is added to merge7T.csv many directories up from here (20230531).
+External measures (e.g. rest framewise displacement) are not included in this output
+because they are expected to be merged from the original source there.
