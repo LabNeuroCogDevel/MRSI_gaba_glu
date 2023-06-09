@@ -5,7 +5,7 @@ library(tidyr) # nest, unnest
 zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
 
 # 20230531 - intially want GABA and Glu. but easy to add more
-mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "MM20")
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "MM20", "NAA")
 
 # select metabolites based on column name using dplyr::match w/ regular expression
 mets_patt <- paste0(collapse="|", mets_keep) # MM20|GABA|Glu|Gln|Cho|Glc
@@ -41,13 +41,43 @@ mrs_long_adj <- mrs_long %>% ungroup() %>%
 
 write.csv(mrs_long_adj, "out/gamadj_long.csv", quote=F, row.names=F)
 
+# NB! In both bilateral average and idv columns,
+#     resids are from model that includes both hemis in input
+#     values (rows) for both L and R are input to model => ... + region
+#     see res_with_age.R
+
 # reshape to look like input again: column per region+met+measure
-mrs_wide_adj <- mrs_long_adj %>%
+mrs_wide_adj_bilat <- mrs_long_adj %>%
     select(ld8,region=biregion,met,Cr,gamadj=Cr_gamadj,SD) %>%
     pivot_wider(id_cols = c("ld8"),
                 names_from = c("region", "met"),
                 values_from = c("gamadj","Cr","SD"),
+                names_glue = "{region}_{met}_{.value}",
                 # NB. might have value per hemispere. simple mean to collapse
                 values_fn = mean)
 
-write.csv(mrs_wide_adj, "out/gamadj_wide.csv", quote=F,row.names=F)
+# keep lateral regions
+mrs_wide_adj_lat <- mrs_long_adj %>%
+    select(ld8,region,met,Cr,gamadj=Cr_gamadj,SD) %>%
+    filter(grepl('^[LR]',region)) %>% 
+    pivot_wider(id_cols = c("ld8"),
+                names_from = c("region", "met"),
+                values_from = c("gamadj","Cr","SD"),
+                names_glue = "{region}_{met}_{.value}") %>%
+    select(ld8,matches('gamadj'))
+
+# GMrat is not per metabolite. so we'll do the collapsing separetly
+mrs_wide_gmrat <- mrs_long_adj %>%
+    select(ld8,region=biregion, GMrat) %>%
+    pivot_wider(id_cols = c("ld8"),
+                names_from = c("region"),
+                values_from = c("GMrat"),
+                # match region_met_.value from above
+                names_glue = "{region}_all_GMrat",
+                # NB. might have value per hemispere. simple mean to collapse
+                values_fn = function(x) mean(x,na.rm=T))
+
+mrs_wide_adj_gm <- merge(mrs_wide_adj_lat, mrs_wide_gmrat, by="ld8") %>%
+   merge(mrs_wide_adj_bilat, by="ld8")
+
+write.csv(mrs_wide_adj_gm, "out/gamadj_wide.csv", quote=F,row.names=F)
