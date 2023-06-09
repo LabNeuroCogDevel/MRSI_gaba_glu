@@ -3,6 +3,30 @@
 Original git repo for GABA vs Glu paper.
 Now also hosting general GAM adjusted MRSI for the PFC slice.
 
+* Outputs
+#+begin_src shell :results output verbatim
+ls -tlrc out
+#+end_src
+
+#+RESULTS:
+: -rw-r----- 1   5845 foranw 2339796 May 31 10:49 long_thres.csv
+: -rw-rw---- 1   5845 foranw 2718536 May 31 10:49 gamadj_long.csv
+: -rw-rw---- 1   5845 foranw  386630 May 31 10:49 gamadj_wide.csv
+
+* Gotchas
+
+  * thresholding value( abs(z)<3 ) and grouping (bilateral per metabolite) may not be ideal
+  * general bugs from integrating (but see `test_*R` files)
+
+* Files
+  * ~Makefile~ tries to list what scripts make what files and annotate their dependencies
+  * ~mrsi_funcs.R~ has functions to clean, add columns (invage, age2, dateNumeric), and reshape from wide to long (useful for plotting and summarise over metabolite and region) -- though the output files should have the output of those, so hopefully only useful for posterity
+  * ~adjust_all.R~ runs per bilateral region+metabolite gam residual adjustment, but only for a few metabolites. But it's hopefully easy to extend
+#+begin_src R :eval never
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "MM20")
+#+end_src
+
+
 * Make
 ~Makefile~ attempts to record provenance of outputs.
 
