@@ -24,15 +24,21 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE) {
      model <- paste0(model, '+ region')
   }
 
-  mrsi.gam <- mgcv::gam(as.formula(model), data=MRSI_input, na.action = na.exclude)
+  
+  mrsi.gam <- tryCatch(mgcv::gam(as.formula(model), data=MRSI_input, na.action = na.exclude),
+                       error=function(e){print(e);print(MRSI_input[1,]); return(NULL)})
+  if(is.null(mrsi.gam)){
+     met_adj <- rep(NA,nrow(MRSI_input))
+  }
+  else{
+     # get residuals at average date and greymatter
+     center <- MRSI_input %>%
+        mutate(dateNumeric = mean(dateNumeric, na.rm=T),
+               GMrat = mean(GMrat, na.rm=T))
 
-  # get residuals at average date and greymatter
-  center <- MRSI_input %>%
-     mutate(dateNumeric = mean(dateNumeric, na.rm=T),
-            GMrat = mean(GMrat, na.rm=T))
-
-  # met_adj is what's left after we've modeled are nuisance regressors
-  met_adj <- unname(predict(mrsi.gam,center) + residuals(mrsi.gam))
+     # met_adj is what's left after we've modeled are nuisance regressors
+     met_adj <- unname(predict(mrsi.gam,center) + residuals(mrsi.gam))
+  }
 
   # vector or dataframe
   if(!return_df) return(met_adj)
