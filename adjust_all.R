@@ -6,7 +6,8 @@ zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
 
 # 20230531 - intially want GABA and Glu. but easy to add more
 # 20230614 - remove MM20. regexp also removes Glu.Gln.Cr and GPC.Cho.Cr
-mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA")
+# 20230630 - add ML and GSH
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH")
 
 # select metabolites based on column name using dplyr::match w/ regular expression
 mets_patt <- paste0(collapse="|", mets_keep) # GABA|Glu|Gln|Cho|Glc
@@ -77,7 +78,8 @@ mrs_wide_adj_lat <- mrs_long_adj %>%
     select(ld8,matches('gamadj|Cr|SD'))
 
 # GMrat is not per metabolite. so we'll do the collapsing separetly
-mrs_wide_gmrat <- mrs_long_adj %>%
+# we want bilateral and averaged GMrats
+mrs_wide_gmrat_bi <- mrs_long_adj %>%
     select(ld8,region=biregion, GMrat) %>%
     pivot_wider(id_cols = c("ld8"),
                 names_from = c("region"),
@@ -86,6 +88,18 @@ mrs_wide_gmrat <- mrs_long_adj %>%
                 names_glue = "{region}_all_GMrat",
                 # NB. might have value per hemispere. simple mean to collapse
                 values_fn = function(x) mean(x,na.rm=T))
+
+mrs_wide_gmrat_hemi <- mrs_long_adj %>%
+    select(ld8,region, GMrat) %>%
+    pivot_wider(id_cols = c("ld8"),
+                names_from = c("region"),
+                values_from = c("GMrat"),
+                # match region_met_.value from above
+                names_glue = "{region}_all_GMrat",
+                # NB. might have value per hemispere. simple mean to collapse
+                values_fn = function(x) mean(x,na.rm=T))
+bilat_names <- setdiff(names(mrs_wide_gmrat_bi), names(mrs_wide_gmrat_hemi))
+mrs_wide_gmrat <- merge(mrs_wide_gmrat_hemi, mrs_wide_gmrat_bi[c("ld8",bilat_names)], all=T)
 
 mrs_wide_adj_gm <- merge(mrs_wide_adj_lat, mrs_wide_gmrat, by="ld8") %>%
    merge(mrs_wide_adj_bilat, by="ld8")
