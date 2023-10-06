@@ -1,7 +1,11 @@
 #+TITLE: MRSI PFC R
 
 Original git repo for GABA vs Glu paper.
-Now also hosting general GAM adjusted MRSI for the PFC slice.
+Now also hosting general GAM adjusted MRSI for the PFC slice (~adjust_all.R~).
+
+Located on ~rhea:/Volumes/Hera/Projects/7TBrainMech/scripts/mri/MRSI_roi/gam_adjust~. 
+Depends on ~13MP20200207_LCMv2fixidx.csv~ created upstream.
+Used by ~/Volumes/Hera/Projects/7TBrainMech/scripts/Makefile~ to build merge7T.csv
 
 * Outputs
 #+begin_src shell :results output verbatim
