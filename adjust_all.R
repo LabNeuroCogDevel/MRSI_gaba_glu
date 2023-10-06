@@ -7,7 +7,8 @@ zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
 # 20230531 - intially want GABA and Glu. but easy to add more
 # 20230614 - remove MM20. regexp also removes Glu.Gln.Cr and GPC.Cho.Cr
 # 20230630 - add ML and GSH
-mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH")
+# 20230914 - add Taurine
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau")
 
 # select metabolites based on column name using dplyr::match w/ regular expression
 mets_patt <- paste0(collapse="|", mets_keep) # GABA|Glu|Gln|Cho|Glc
@@ -15,6 +16,7 @@ mets_regex <- glue::glue('^({mets_patt})\\.(Cr|SD)') # Cr ratio and SD
 
 # read in raw data. clean. and reduce columns to just those we care about
 mrs <- read.csv('13MP20200207_LCMv2fixidx.csv') %>%
+   filter(!failqc) %>%
    mrsi_metqc() %>% mrsi_add_cols() %>%
    select(ld8, region, age, GMrat, dateNumeric,matches(mets_regex))
 
