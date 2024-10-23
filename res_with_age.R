@@ -11,9 +11,9 @@ require(mgcv)
 #' @param MRSI_input dataframe with roi, age, dateNumeric
 #' @param met_name  metabolite eg. 'GABA.Cre'. column in MRSI_input
 #' @param return_df bool, if NULL (default) return df only when this_roi is not NULL
-#' @param save_model bool|char, if not NULL (default) save model. if char, use that 
-#' @return vector of adjusted metabolite OR dataframe with new 'met_name'_gamadj column
-res_with_age <- function(MRSI_input, met_name, return_df=FALSE, save_model=NULL) {
+#' @param return_model bool return gam model instead of dataframe
+#' @return vector of adjusted metabolite OR dataframe with new 'met_name'_gamadj column OR gam model
+res_with_age <- function(MRSI_input, met_name, return_df=FALSE, return_model=FALSE) {
   checkmate::expect_subset(c("age", "dateNumeric", met_name), names(MRSI_input))
 
   model <- paste0(met_name, ' ~ s(age, k=3) + s(dateNumeric, k=5)')
@@ -54,14 +54,7 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE, save_model=NULL)
      met_adj <- unname(predict(mrsi.gam,center) + residuals(mrsi.gam))
   }
 
-  if(!is.null(save_model)){
-     if(is.logical(save_model) && save_model) {
-        if(!dir.exists('models')) dir.create('models')
-        save_model <- glue::glue("models/mgcv-gam_met-{met_name}-regions-{regions}_GM-{hasGM}.Rdata")
-     }
-     cat("# saving model to", save_model, "\n")
-     save(list=c("mrsi.gam"), file=save_model)
-  }
+  if(return_model) return(mrsi.gam)
 
   # vector or dataframe
   if(!return_df) return(met_adj)

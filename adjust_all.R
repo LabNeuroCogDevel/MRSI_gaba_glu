@@ -46,11 +46,18 @@ mrs_long <- longer_met_CrSD(mrs) %>%
 write.csv(mrs_long, "out/long_thres.csv", quote=F, row.names=F)
 
 # apply res_with_age to each group
-# 20241023 - added save_model. see models/
-mrs_long_adj <- mrs_long %>% ungroup() %>%
-   nest(.by=c("met", "biregion"), .key="metdata") %>%
-   mutate(metdata=lapply(metdata, function(d) res_with_age(d, met='Cr',return_df=TRUE, save_model=TRUE))) %>%
+chunked_by_met_region <- mrs_long %>%
+   ungroup() %>%
+   nest(.by=c("met", "biregion"), .key="metdata")
+mrs_long_adj <-
+   chunked_by_met_region %>%
+   mutate(metdata=lapply(metdata, function(d) res_with_age(d, met='Cr',return_df=TRUE))) %>%
    unnest(cols=c("metdata"))
+
+# 20241023 - added save_model. rerun above but save out model instead
+gam_models <- chunked_by_met_region %>%
+   mutate(model=lapply(metdata, \(d) res_with_age(d, met='Cr',return_model=TRUE)))
+save(list=c("gam_models"), file="mgcv-gam_tibble.Rdata")
 
 write.csv(mrs_long_adj, "out/gamadj_long.csv", quote=F, row.names=F)
 
