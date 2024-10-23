@@ -7,18 +7,32 @@ require(mgcv)
 #' adjust metabolte with residuals of gam model
 #'
 #' 20230531 - removed this_roi option. filter before sending to function
+#' 20241023 - added save_model option for Pupi&Sarpal
 #' @param MRSI_input dataframe with roi, age, dateNumeric
 #' @param met_name  metabolite eg. 'GABA.Cre'. column in MRSI_input
 #' @param return_df bool, if NULL (default) return df only when this_roi is not NULL
+#' @param save_model bool|char, if not NULL (default) save model. if char, use that 
 #' @return vector of adjusted metabolite OR dataframe with new 'met_name'_gamadj column
-res_with_age <- function(MRSI_input, met_name, return_df=FALSE) {
-  checkmate::expect_subset(c("age", "dateNumeric", "GMrat", met_name), names(MRSI_input))
+res_with_age <- function(MRSI_input, met_name, return_df=FALSE, save_model=NULL) {
+  checkmate::expect_subset(c("age", "dateNumeric", met_name), names(MRSI_input))
 
-  model <- paste0(met_name, ' ~ s(age, k=3) + s(dateNumeric, k=5) + s(GMrat, k=3)')
+  model <- paste0(met_name, ' ~ s(age, k=3) + s(dateNumeric, k=5)')
+
+  # 20231025 - GMrat not always wanted here. MP wants to report GM model fit in own model
+  # but be careful!  from FC: 
+  # > gm is correlated to age, so we want to be sure we're removing the effects of %gm and date
+  # > and not age itself
+  hasGM <- FALSE
+  if("GMrat" %in% names(MRSI_input)) {
+     model <- paste0(model ,'+ s(GMrat, k=3)')
+     hasGM <- TRUE
+  } else{
+     warning("Not including GM when generating residuals with gam model! no 'GMrat' column")
+  }
 
   # if region and there are multiples, e.g. if have e.g. L and R, model each
+  regions <- paste0(collapse=',', unique(MRSI_input[['region']]))
   if("region" %in% names(MRSI_input) && length(unique(MRSI_input$region))>1L) {
-     regions <- paste0(collapse=',', unique(MRSI_input$region))
      cat(glue::glue("modeling multiple regions: {regions}\n"),"\n")
      MRSI_input$region <- as.factor(MRSI_input$region) # ensure it's a factor for modeling
      model <- paste0(model, '+ region')
@@ -38,6 +52,15 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE) {
 
      # met_adj is what's left after we've modeled are nuisance regressors
      met_adj <- unname(predict(mrsi.gam,center) + residuals(mrsi.gam))
+  }
+
+  if(!is.null(save_model)){
+     if(is.logical(save_model) && save_model) {
+        if(!dir.exists('models')) dir.create('models')
+        save_model <- glue::glue("models/mgcv-gam_met-{met_name}-regions-{regions}_GM-{hasGM}.Rdata")
+     }
+     cat("# saving model to", save_model, "\n")
+     save(list=c("mrsi.gam"), file=save_model)
   }
 
   # vector or dataframe

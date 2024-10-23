@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source('mrsi_funcs.R')
+source('mrsi_funcs.R') # mrsi_add_cols
 source('res_with_age.R')
 library(tidyr) # nest, unnest
 zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
@@ -31,12 +31,12 @@ sd_thres <- function(x)
              grepl('Glu|GABA',x) ~ 20,
              grepl('Cho',x)      ~ 40, # TODO: check
              grepl('Glc',x)      ~ 120,# TODO: check
-             .default=20)
+             .default=20)              # taurine is 20, just not explicitly
 mrs_long <- longer_met_CrSD(mrs) %>%
    # collapse across hemispheres
-   # conviently R,L are always hemisphere. others: MPFC ACC 
+   # conveniently R,L are always hemisphere. others: MPFC ACC 
    mutate(biregion=gsub('^(R|L)','',region)) %>%
-   # work on each region X met separetly
+   # work on each region X met separately
    group_by(met, region) %>% 
    #NB. 'Cr' here is Cr ratio for a given metabolite
    #    sd_thres is 20 for gaba and glu
@@ -46,9 +46,10 @@ mrs_long <- longer_met_CrSD(mrs) %>%
 write.csv(mrs_long, "out/long_thres.csv", quote=F, row.names=F)
 
 # apply res_with_age to each group
+# 20241023 - added save_model. see models/
 mrs_long_adj <- mrs_long %>% ungroup() %>%
    nest(.by=c("met", "biregion"), .key="metdata") %>%
-   mutate(metdata=lapply(metdata, function(d) res_with_age(d, met='Cr',return_df=TRUE))) %>%
+   mutate(metdata=lapply(metdata, function(d) res_with_age(d, met='Cr',return_df=TRUE, save_model=TRUE))) %>%
    unnest(cols=c("metdata"))
 
 write.csv(mrs_long_adj, "out/gamadj_long.csv", quote=F, row.names=F)
@@ -79,7 +80,7 @@ mrs_wide_adj_lat <- mrs_long_adj %>%
     # 20230614: add Cr and SD, not just gamadj
     select(ld8,matches('gamadj|Cr|SD'))
 
-# GMrat is not per metabolite. so we'll do the collapsing separetly
+# GMrat is not per metabolite. so we'll do the collapsing separately
 # we want bilateral and averaged GMrats
 mrs_wide_gmrat_bi <- mrs_long_adj %>%
     select(ld8,region=biregion, GMrat) %>%
