@@ -59,6 +59,15 @@ gam_models <- chunked_by_met_region %>%
    mutate(model=lapply(metdata, \(d) res_with_age(d, met='Cr',return_model=TRUE)))
 save(list=c("gam_models"), file="mgcv-gam_tibble.Rdata")
 
+# 20241030 - issue with gamViz?
+#setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/mri/MRSI_roi/gam_adjust")
+#source('res_with_age.R')
+#mrs_long <- read.csv("out/long_thres.csv")
+#data_gaba_acc <- mrs_long %>% filter(met=="GABA",  biregion =='ACC') %>% na.omit()
+#model_gaba_acc <- res_with_age(data_gaba_acc, met='Cr',return_model=TRUE)
+#viz <- mgcViz::getViz(model_gaba_acc, allTerms = T)
+#plot(viz) # Error ... replacement has 268 rows, data has 256
+
 write.csv(mrs_long_adj, "out/gamadj_long.csv", quote=F, row.names=F)
 
 # NB! In both bilateral average and idv columns,

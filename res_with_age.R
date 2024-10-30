@@ -22,10 +22,8 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE, return_model=FAL
   # but be careful!  from FC: 
   # > gm is correlated to age, so we want to be sure we're removing the effects of %gm and date
   # > and not age itself
-  hasGM <- FALSE
   if("GMrat" %in% names(MRSI_input)) {
      model <- paste0(model ,'+ s(GMrat, k=3)')
-     hasGM <- TRUE
   } else{
      warning("Not including GM when generating residuals with gam model! no 'GMrat' column")
   }
@@ -38,9 +36,13 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE, return_model=FAL
      model <- paste0(model, '+ region')
   }
 
-  
-  mrsi.gam <- tryCatch(mgcv::gam(as.formula(model), data=MRSI_input, na.action = na.exclude),
+  # 20241030: remove NA columns before going into model to work with viz packages (mgcViz)
+  keep_i <- complete.cases(MRSI_input[,all.vars(model_gaba_acc$formula)])
+  mrsi.gam <- tryCatch(mgcv::gam(as.formula(model), data=MRSI_input[keep_i,], na.action = na.exclude),
                        error=function(e){print(e);print(MRSI_input[1,]); return(NULL)})
+
+  if(return_model) return(mrsi.gam)
+
   if(is.null(mrsi.gam)){
      met_adj <- rep(NA,nrow(MRSI_input))
   }
@@ -54,7 +56,6 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE, return_model=FAL
      met_adj <- unname(predict(mrsi.gam,center) + residuals(mrsi.gam))
   }
 
-  if(return_model) return(mrsi.gam)
 
   # vector or dataframe
   if(!return_df) return(met_adj)
