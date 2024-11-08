@@ -1,18 +1,16 @@
 #!/usr/bin/env Rscript
-source('mrsi_funcs.R') # mrsi_add_cols
+source('mrsi_funcs.R') # mrsi_add_cols(), mrsi_metqc(), mrs_wide_to_long_cleaned()
 source('res_with_age.R')
 library(tidyr) # nest, unnest
-zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
 
 # 20230531 - intially want GABA and Glu. but easy to add more
 # 20230614 - remove MM20. regexp also removes Glu.Gln.Cr and GPC.Cho.Cr
 # 20230630 - add ML and GSH
 # 20230914 - add Taurine
-mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau")
+# 20241108 - move more functions into res_with_age.R
 
-# select metabolites based on column name using dplyr::match w/ regular expression
-mets_patt <- paste0(collapse="|", mets_keep) # GABA|Glu|Gln|Cho|Glc
-mets_regex <- glue::glue('^({mets_patt})\\.(Cr|SD)') # Cr ratio and SD
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau")
+mets_regex <- colname_sd_or_cr(mets_keep)
 
 # read in raw data. clean. and reduce columns to just those we care about
 mrs <- read.csv('13MP20200207_LCMv2fixidx.csv') %>%
@@ -20,29 +18,7 @@ mrs <- read.csv('13MP20200207_LCMv2fixidx.csv') %>%
    mrsi_metqc() %>% mrsi_add_cols() %>%
    select(ld8, region, age, GMrat, dateNumeric,matches(mets_regex))
 
-
-# longer with new cols 'met', 'Cr', and 'SD' (reshape to remove per metabolite columns)
-z_thres <- 3
-# added 20230614 (to match previous analysis)
-# 20 for Glu and GABA. guess for others
-# TODO: VALIDATE Glc and Cho SD thres
-sd_thres <- function(x)
-   case_when(
-             grepl('Glu|GABA',x) ~ 20,
-             grepl('Cho',x)      ~ 40, # TODO: check
-             grepl('Glc',x)      ~ 120,# TODO: check
-             .default=20)              # taurine is 20, just not explicitly
-mrs_long <- longer_met_CrSD(mrs) %>%
-   # collapse across hemispheres
-   # conveniently R,L are always hemisphere. others: MPFC ACC 
-   mutate(biregion=gsub('^(R|L)','',region)) %>%
-   # work on each region X met separately
-   group_by(met, region) %>% 
-   #NB. 'Cr' here is Cr ratio for a given metabolite
-   #    sd_thres is 20 for gaba and glu
-   mutate(Cr=ifelse(SD>sd_thres(met), NA, Cr),
-          met_crz=zscore_abs(Cr),
-          Cr=ifelse(met_crz>=z_thres, NA, Cr))
+mrs_long <- mrs %>% mrs_wide_to_long_cleaned(z_thres=3)
 write.csv(mrs_long, "out/long_thres.csv", quote=F, row.names=F)
 
 # apply res_with_age to each group
@@ -54,21 +30,7 @@ mrs_long_adj <-
    mutate(metdata=lapply(metdata, function(d) res_with_age(d, met='Cr',return_df=TRUE))) %>%
    unnest(cols=c("metdata"))
 
-# 20241023 - added save_model. rerun above but save out model instead
-gam_models <- chunked_by_met_region %>%
-   mutate(model=lapply(metdata, \(d) res_with_age(d, met='Cr',return_model=TRUE)))
-save(list=c("gam_models"), file="mgcv-gam_tibble.Rdata")
-
-# 20241030 - issue with gamViz?
-#setwd("/Volumes/Hera/Projects/7TBrainMech/scripts/mri/MRSI_roi/gam_adjust")
-#source('res_with_age.R')
-#mrs_long <- read.csv("out/long_thres.csv")
-#data_gaba_acc <- mrs_long %>% filter(met=="GABA",  biregion =='ACC') %>% na.omit()
-#model_gaba_acc <- res_with_age(data_gaba_acc, met='Cr',return_model=TRUE)
-#viz <- mgcViz::getViz(model_gaba_acc, allTerms = T)
-#plot(viz) # Error ... replacement has 268 rows, data has 256
-
-write.csv(mrs_long_adj, "out/gamadj_long.csv", quote=F, row.names=F)
+write.csv(mrs_long_adj, "out/gamadj_long_wfmod.csv", quote=F, row.names=F)
 
 # NB! In both bilateral average and idv columns,
 #     resids are from model that includes both hemis in input

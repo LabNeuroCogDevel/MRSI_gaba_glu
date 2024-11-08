@@ -1,7 +1,49 @@
 require(dplyr)
 
+zscore_abs <- function(x) abs(scale(x,center=T,scale=T)[,1])
+
+# added 20230614 (to match previous analysis)
+# 20 for Glu and GABA. guess for others
+# TODO: VALIDATE Glc and Cho SD thres
+sd_thres <- function(x)
+   case_when(
+             grepl('Glu|GABA',x) ~ 20,
+             grepl('Cho',x)      ~ 40, # TODO: check
+             grepl('Glc',x)      ~ 120,# TODO: check
+             .default=20)              # taurine is 20, just not explicitly
+
+
+#' select metabolites based on column name using dplyr::match w/ regular expression
+#'
+#' @param met_keep vector of metabolite column names
+#' @return pattern matching CR and SD columns for metabolite. for dplyr::matches()
+colname_sd_or_cr <- function(met_keep) {
+   mets_patt <- paste0(collapse="|", mets_keep) # GABA|Glu|Gln|Cho|Glc
+   mets_regex <- glue::glue('^({mets_patt})\\.(Cr|SD)') # Cr ratio and SD
+}
+
+#' original wide format lcmodel output to row per metabolite with column for Cr ratio and SD 
+#'
+#' @param mrs lcmodel mrsi input data frame
+#' @param z_thres maximum abs zscore
+#' @return long dataframe with 'Cr' and 'SD' column. NA if zscore>thres
+mrs_wide_to_long_cleaned <- function(mrs, z_thres=3) {
+  # longer with new cols 'met', 'Cr', and 'SD' (reshape to remove per metabolite columns)
+  mrs_long <- longer_met_CrSD(mrs) %>%
+     # collapse across hemispheres
+     # conveniently R,L are always hemisphere. others: MPFC ACC
+     mutate(biregion=gsub('^(R|L)','',region)) %>%
+     # work on each region X met separately
+     group_by(met, region) %>%
+     #NB. 'Cr' here is Cr ratio for a given metabolite
+     #    sd_thres is 20 for gaba and glu
+     mutate(Cr=ifelse(SD>sd_thres(met), NA, Cr),
+            met_crz=zscore_abs(Cr),
+            Cr=ifelse(met_crz>=z_thres, NA, Cr))
+}
+
 #' reject rows that fail quality checking
-#' 
+#'
 #' @param MRS input dataframe with SD and Cr columns for macromolicules
 #' @return dataframe with noisy rows removed
 mrsi_metqc <- function(MRS) {
