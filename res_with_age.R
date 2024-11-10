@@ -136,12 +136,12 @@ mrsi_model_date <- function(MRSI_input, met_name, min_age=-Inf, include.na=TRUE)
 
 #' adjust metabolte with residuals of gam model
 #'
-#' @param mris.gam model, likely from 
+#' @param mrsi.gam model, likely from 
 #' @param MRSI_input dataframe with roi, age, dateNumeric
 #' @param return_df bool, if NULL (default) return df only when this_roi is not NULL
 #' @param center_on vector of columns to replace with their center before predict-ing
 #' @return vector of adjusted metabolite OR dataframe with new 'met_name'_gamadj column
-adj_by_model <- function(mris.gam, MRSI_input,
+adj_by_model <- function(mrsi.gam, MRSI_input,
                          return_df=FALSE,
                          center_on=c("dateNumeric","GMrat")) {
   checkmate::expect_subset(all.vars(mrsi.gam$formula), names(MRSI_input))
