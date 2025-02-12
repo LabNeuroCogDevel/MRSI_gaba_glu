@@ -8,8 +8,12 @@ source('mrsi_funcs.R') # mrsi_add_cols(), mrsi_metqc(), mrs_wide_to_long_cleaned
 source('res_with_age.R') 
 
 mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau")
-# 20241108 - additional metabolites
-mets_keep <- c(mets_keep, "NAAG","NAA.NAAG","GPC.Cho","Glu.Gln")
+# additional metabolites
+mets_keep <- c(mets_keep,
+               # 20241108 - initial addition
+               "NAAG","NAA.NAAG","GPC.Cho","Glu.Gln",
+               # 20250212 - still more!
+               "Asp", "GPC", "MM20")
 mets_regex <- colname_sd_or_cr(mets_keep)
 
 # from adjust_all.R
@@ -32,6 +36,7 @@ gam_models_18 <- chunked_by_met_region %>%
    mutate(model=lapply(metdata, \(d) mrsi_model_date(d, met_name='Cr', include.na=FALSE, min_age=18)))
 
 save(list=c("gam_models_all","gam_models_18"), file="mgcv-gam_tibble.Rdata")
+quit('no')
 
 ## compare
 data_gaba_thal <- mrs_long %>% filter(met=="GABA",  biregion =='Thalamus') %>% na.omit()
