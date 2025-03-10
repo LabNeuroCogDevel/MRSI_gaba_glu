@@ -1,0 +1,106 @@
+#+PROPERIES: header-args:R :session :exports both :eval no-export :colnames yes
+* Glu.Gln
+
+~Glu.Gln~ in model Rdata file is ~Glu.Gln.Cr~ from the raw data.
+
+To confirm, first we get values from the lcmodel output. the "dateNumeric" column from [[file:mrsi_funcs.R][mrsi_funcs.R]] is needed later to merge with model data.
+
+#+begin_src R :session :colnames yes
+library(dplyr)
+orig <- read.csv('./13MP20200207_LCMv2fixidx.csv')
+orig.roi1 <- orig |>
+  mutate(dateNumeric=as.numeric(as.POSIXct(gsub('.*_','',ld8), format="%Y%m%d"))) |>
+  select(dateNumeric, age, roi, matches('Glu.Gln')) |>
+  filter(roi==1) |>
+  arrange(dateNumeric)
+
+head(orig.roi1)
+#+end_src
+
+#+RESULTS:
+| dateNumeric |   age | roi | Glu.Gln | Glu.Gln.SD | Glu.Gln.Cr |
+|-------------+-------+-----+---------+------------+------------|
+|  1517202000 | 23.99 |   1 | 379.313 |          3 |      1.687 |
+|  1518757200 | 19.47 |   1 | 342.445 |          3 |      1.738 |
+|  1518757200 | 29.48 |   1 | 223.869 |          3 |       1.51 |
+|  1520827200 | 23.87 |   1 | 277.817 |          3 |      1.763 |
+|  1521172800 | 19.46 |   1 |  58.444 |          8 |      2.519 |
+|  1521777600 | 22.69 |   1 |    1430 |          3 |      1.784 |
+
+
+And with the data input into the models. (roi 1 is ~RAntInsula~)
+#+begin_src R :session :colnames yes
+newvars <- load('./mgcv-gam_tibble.Rdata')
+m <- with(gam_models_all, model[biregion=='AntInsula' & met=='Glu.Gln'][[1]])
+m.roi1 <- m$model |> filter(region=="RAntInsula") |> arrange(dateNumeric)
+m.roi1 |> select(dateNumeric,age,region,Cr) |> head()
+#+end_src
+
+#+RESULTS:
+| dateNumeric |   age | region     |    Cr |
+|-------------+-------+------------+-------|
+|  1517202000 | 23.99 | RAntInsula | 1.687 |
+|  1518757200 | 19.47 | RAntInsula | 1.738 |
+|  1518757200 | 29.48 | RAntInsula |  1.51 |
+|  1520827200 | 23.87 | RAntInsula | 1.763 |
+|  1521777600 | 22.69 | RAntInsula | 1.784 |
+|  1521777600 |  28.2 | RAntInsula | 1.561 |
+
+#+begin_src R :session :colnames yes
+both <- merge(orig.roi1, m.roi1, by=c('dateNumeric','age'))
+both |> select(dateNumeric,age, Glu.Gln.Cr, Cr) |> head(n=4)
+#+end_src
+
+#+RESULTS:
+| dateNumeric |   age | Glu.Gln.Cr |    Cr |
+|-------------+-------+------------+-------|
+|  1517202000 | 23.99 |      1.687 | 1.687 |
+|  1518757200 | 19.47 |      1.738 | 1.738 |
+|  1518757200 | 29.48 |       1.51 |  1.51 |
+|  1520827200 | 23.87 |      1.763 | 1.763 |
+
+
+Mostly matches! Glu.Gln in model from Glu.Gln.Cr in raw data!
+#+begin_src R :session  :colnames yes
+dif <- both |> mutate(match=Glu.Gln.Cr == Cr)
+dif |> count(match)
+#+end_src
+
+#+RESULTS:
+| match |   n |
+|-------+-----|
+| FALSE |   2 |
+| TRUE  | 260 |
+
+** bad match
+The only not matching is suspicious repeat that gets matches for both it's values. (many-to-many merge. of 4 rows, 2 are paired correctly and 2 are not -- those 2 are below)
+#+begin_src R :session  :colnames yes
+dif |> filter(!match) |> select(dateNumeric,age,matches('Cr'))
+#+end_src
+
+#+RESULTS:
+| dateNumeric |  age | Glu.Gln.Cr |    Cr |
+|-------------+------+------------+-------|
+|  1530158400 | 23.9 |      1.376 | 1.412 |
+|  1530158400 | 23.9 |      1.412 | 1.376 |
+
+#+begin_src R :session  :colnames yes
+baddate <- with(dif,dateNumeric[!match])[1]
+orig.roi1 |> filter(dateNumeric == baddate)
+#+end_src
+
+#+RESULTS:
+| dateNumeric |  age | roi | Glu.Gln | Glu.Gln.SD | Glu.Gln.Cr |
+|-------------+------+-----+---------+------------+------------|
+|  1530158400 | 23.9 |   1 | 259.171 |          4 |      1.412 |
+|  1530158400 | 23.9 |   1 | 259.657 |          4 |      1.376 |
+
+#+begin_src R :session  :colnames yes
+m.roi1 |> filter(dateNumeric == baddate)
+#+end_src
+
+#+RESULTS:
+|    Cr | region     |  age | dateNumeric |    GMrat |
+|-------+------------+------+-------------+----------|
+| 1.412 | RAntInsula | 23.9 |  1530158400 | 0.506944 |
+| 1.376 | RAntInsula | 23.9 |  1530158400 | 0.161663 |
