@@ -8,18 +8,33 @@ library(tidyr) # nest, unnest
 # 20230630 - add ML and GSH
 # 20230914 - add Taurine
 # 20241108 - move more functions into res_with_age.R
+# 20260520 - add GPC
+# 20260602 - get raw Cr
 
-mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau")
+mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "NAA", "mI","GSH", "Tau", "NAAG", "GPC")
 mets_regex <- colname_sd_or_cr(mets_keep)
 
 # read in raw data. clean. and reduce columns to just those we care about
-mrs <- read.csv('13MP20200207_LCMv2fixidx.csv') %>%
+all_mrs <- read.csv('13MP20200207_LCMv2fixidx.csv')
+mrs_qc <- all_mrs %>%
    filter(!failqc) %>%
-   mrsi_metqc() %>% mrsi_add_cols() %>%
+   mrsi_metqc() %>% mrsi_add_cols()
+mrs <- mrs_qc %>%
    select(ld8, region, age, GMrat, dateNumeric,matches(mets_regex))
 
+# 20260602 - raw Cr values (for reviewer)
+cr_raw <- mrs_qc |> select(ld8, region, Cr_raw=Cr, Cr_raw.SD=Cr.SD) 
+write.csv(cr_raw,"out/cr_raw.csv", quote=F, row.names=F)
+
+# track long format and thresholded; nrow(mrs_long) == 34056;
+# will be input to residual modeling
+# cols: "ld8", "region", "age", "GMrat", "dateNumeric", "met", "Cr", "SD", "biregion", "met_crz"
 mrs_long <- mrs %>% mrs_wide_to_long_cleaned(z_thres=3)
 write.csv(mrs_long, "out/long_thres.csv", quote=F, row.names=F)
+
+# save copy of long with Cr appened. Likely don't want this but the modeled version below
+mrs_long_wcr <- merge(mrs_long,cr_raw, by=c("ld8","region"), all.x=T)
+write.csv(mrs_long_wcr, "out/long_thres_cr.csv", quote=F, row.names=F)
 
 # apply res_with_age to each group
 chunked_by_met_region <- mrs_long %>%
@@ -86,3 +101,9 @@ mrs_wide_adj_gm <- merge(mrs_wide_adj_lat, mrs_wide_gmrat, by="ld8") %>%
    merge(mrs_wide_adj_bilat, by="ld8")
 
 write.csv(mrs_wide_adj_gm, "out/gamadj_wide.csv", quote=F,row.names=F)
+
+# 20260602 - again with exra Cr columns (2 for each region)
+# mrs_wide_adj_gm <- read.csv("out/gamadj_wide.csv")
+cr_raw_wide <- cr_raw |> pivot_wider(id_cols='ld8',names_from=c('region'), values_from=c('Cr_raw','Cr_raw.SD'))
+mrs_wide_adj_gm_wcr <- merge(mrs_wide_adj_gm, cr_raw_wide, by=c("ld8"), all.x=T)
+write.csv(mrs_wide_adj_gm_wcr, "out/gamadj_wide_cr.csv", quote=F,row.names=F)
