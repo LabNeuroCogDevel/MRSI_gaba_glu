@@ -9,11 +9,11 @@ all: out/gamadj_wide.csv # imgs/thresholding_cnt_met_region.png
 
 # adj_wide is last made
 out/long_thres.csv out/gamadj_long.csv: out/gamadj_wide.csv
-out/gamadj_wide.csv: 13MP20200207_LCMv2fixidx.csv ./adjust_all.R
+out/gamadj_wide_cr.csv: 13MP20200207_LCMv2fixidx.csv ./adjust_all.R
 	./adjust_all.R
 
 imgs/thresholding_cnt_met_region.png: imgs/gam_adjusted_Vs_Cr.png
-imgs/gam_adjusted_Vs_Cr.png: out/long_thres.csv out/gamadj_wide.csv ./visualize.R
+imgs/gam_adjusted_Vs_Cr.png: out/long_thres.csv ./visualize.R
 	./visualize.R
 
 
