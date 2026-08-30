@@ -23,6 +23,10 @@ res_with_age <- function(MRSI_input, met_name, return_df=FALSE, return_model=FAL
                          min_age=-Inf) {
   checkmate::expect_subset(c("age", "dateNumeric", met_name), names(MRSI_input))
 
+  # want as.numeric(as.POSIXct('2019-10-04')) not as.numeric(gsub('.*_','', '99999_20181231'))
+  # load('mgcv-gam_tibble.Rdata'); gam_models_all$model[[1]]$model$dateNumeric |> range() == 1526875200 1635480000
+  stopifnot(min(MRSI_input$dateNumeric,na.rm=T) > 29999999)
+
   model <- paste0(met_name, ' ~ s(age, k=3) + s(dateNumeric, k=5)')
 
   # 20231025 - GMrat not always wanted here. MP wants to report GM model fit in own model
