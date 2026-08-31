@@ -1,7 +1,8 @@
 #+TITLE: MRSI PFC R
 
-Original git repo for GABA vs Glu paper.
-Now also hosting general GAM adjusted MRSI for the PFC slice (~adjust_all.R~).
+Original git repo for GAM adjusted age modeling in [[https://pmc.ncbi.nlm.nih.gov/articles/PMC12747136/][Perica, Maria I et al. “Development of frontal GABA and glutamate supports excitation/inhibition balance from adolescence into adulthood.” Progress in neurobiology vol. 219 (2022): 102370. doi:10.1016/j.pneurobio.2022.102370]].
+
+Now also hosting general GAM adjusted MRSI for the PFC slice (~adjust_all.R~). See [[https://pubmed.ncbi.nlm.nih.gov/42575941/][Pupi, Michael et al. “7T magnetic resonance spectroscopic imaging of subcortical neurometabolites across antipsychotic treatment in acutely symptomatic early-phase schizophrenia spectrum disorders.” Neuropsychopharmacology : official publication of the American College of Neuropsychopharmacology, 10.1038/s41386-026-02522-y]]
 
 Located on ~rhea:/Volumes/Hera/Projects/7TBrainMech/scripts/mri/MRSI_roi/gam_adjust~. 
 Depends on ~13MP20200207_LCMv2fixidx.csv~ created upstream.
@@ -21,6 +22,7 @@ ls -tlrc out
 
   * thresholding value( abs(z)<3 ) and grouping (bilateral per metabolite) may not be ideal
   * general bugs from integrating (but see `test_*R` files)
+  * ~dateNumeric~ used to model and saved in ~mgcv-gam_tibble.Rdata~ are from ~as.numeric(as.POSIXct())~
 
 * Files
   * ~Makefile~ tries to list what scripts make what files and annotate their dependencies
@@ -29,6 +31,7 @@ ls -tlrc out
 #+begin_src R :eval never
 mets_keep <- c("GABA","Glu","Gln","Cho","Glc", "MM20")
 #+end_src
+  * ~mgcv-gam_tibble.Rdata~ has mgcv GAM models for BST3 7T scanner date correction generated with original Luna dataset, applied to the Sarpal clinical cohort.
 
 
 * Make
